@@ -151,9 +151,9 @@ export default function RegisterPage() {
                             else if (isPrimary) { setPrimaryIds(prev => prev.filter(x => x !== p.id)); setSecondaryIds(prev => [...prev, p.id]); }
                             else { setSecondaryIds(prev => prev.filter(x => x !== p.id)); }
                           }}
-                          className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                          className={`px-3 py-1.5 rounded-full text-sm border-2 transition-colors ${
                             isPrimary ? "bg-primary text-primary-foreground border-primary" :
-                            isSecondary ? "bg-secondary text-secondary-foreground border-secondary" :
+                            isSecondary ? "bg-primary/10 text-primary border-primary/50" :
                             "bg-background border-input"
                           }`}
                         >
