@@ -198,7 +198,7 @@ export default function ProfilePage() {
           <div className="space-y-1.5"><Label>О себе</Label><Textarea rows={3} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} placeholder="Коротко о себе..." /></div>
           <div className="flex gap-2">
             <div className="flex-1 space-y-1.5"><Label>Город</Label><Input placeholder="Алматы" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
-            <div className="flex-1 space-y-1.5"><Label>Лет опыта</Label><Input type="number" value={form.experienceYears} onChange={(e) => setForm({ ...form, experienceYears: e.target.value })} /></div>
+            <div className="flex-1 space-y-1.5"><Label>Опыт (лет)</Label><Input type="number" value={form.experienceYears} onChange={(e) => setForm({ ...form, experienceYears: e.target.value })} /></div>
           </div>
           <div className="space-y-1.5">
             <Label>Доступность</Label>

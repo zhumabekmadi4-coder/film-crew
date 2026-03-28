@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { MapPin, Clock } from "lucide-react";
+import { plural, capitalizeCity } from "@/lib/utils";
 
 const availabilityLabels: Record<string, string> = {
   "full-time": "Полный день",
@@ -51,14 +52,14 @@ export function UserCard({ user, actions }: Props) {
               {user.city && (
                 <span className="flex items-center gap-0.5">
                   <MapPin className="w-3 h-3" />
-                  {user.city}
+                  {capitalizeCity(user.city)}
                 </span>
               )}
               <span className="flex items-center gap-0.5">
                 <Clock className="w-3 h-3" />
                 {availabilityLabels[user.availability] ?? user.availability}
               </span>
-              {user.experienceYears && <span>{user.experienceYears} лет опыта</span>}
+              {user.experienceYears && <span>{plural(user.experienceYears, "год", "года", "лет")} опыта</span>}
             </div>
           </div>
           {actions && <div className="flex items-center">{actions}</div>}

@@ -64,15 +64,23 @@ export default function FeedPage() {
           {[1,2,3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
         </div>
       ) : projects.length === 0 ? (
-        <EmptyState
-          title="Проектов пока нет"
-          description="Создай первый проект и начни набирать команду"
-          action={
-            <Link href="/projects/new">
-              <Button>Создать проект</Button>
-            </Link>
-          }
-        />
+        (query || genre || city) ? (
+          <EmptyState
+            title="Ничего не найдено"
+            description="Попробуй изменить фильтры или параметры поиска"
+            icon="🔍"
+          />
+        ) : (
+          <EmptyState
+            title="Проектов пока нет"
+            description="Создай первый проект и начни набирать команду"
+            action={
+              <Link href="/projects/new">
+                <Button>Создать проект</Button>
+              </Link>
+            }
+          />
+        )
       ) : (
         <div className="space-y-3">
           {projects.map((p) => <ProjectCard key={p.id} project={p} />)}

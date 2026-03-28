@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MapPin, Film, Users, Link2, Edit, UserPlus } from "lucide-react";
+import { plural, capitalizeCity } from "@/lib/utils";
 
 const statusLabels: Record<string, string> = {
   drafting: "Черновик",
@@ -33,8 +34,12 @@ export default function ProjectDetailPage() {
 
   useEffect(() => {
     fetch(`/api/projects/${id}`)
-      .then((r) => r.json())
-      .then((data) => { setProject(data); setLoading(false); });
+      .then((r) => {
+        if (!r.ok) { setLoading(false); return null; }
+        return r.json();
+      })
+      .then((data) => { if (data && !data.error) setProject(data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [id]);
 
   async function handleApply() {
@@ -82,8 +87,8 @@ export default function ProjectDetailPage() {
       )}
 
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        {project.city && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{project.city}</span>}
-        <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{project.membersCount} участников</span>
+        {project.city && <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" />{capitalizeCity(project.city)}</span>}
+        <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" />{plural(project.membersCount, "участник", "участника", "участников")}</span>
       </div>
 
       {project.owner && (

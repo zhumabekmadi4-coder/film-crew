@@ -30,8 +30,11 @@ export function BottomNav() {
               )}
             >
               {isMain ? (
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg -mt-6">
-                  <Icon className="w-6 h-6 text-primary-foreground" />
+                <div className="flex flex-col items-center -mt-6">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                    <Icon className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground mt-0.5">{label}</span>
                 </div>
               ) : (
                 <>

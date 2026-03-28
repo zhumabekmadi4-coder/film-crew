@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Clock, Film, MessageCircle, ExternalLink, Briefcase } from "lucide-react";
 import { AVAILABILITY_OPTIONS, EQUIPMENT_CATEGORIES } from "@/lib/constants";
+import { plural, capitalizeCity } from "@/lib/utils";
 
 export default function UserProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -53,9 +54,9 @@ export default function UserProfilePage() {
             ))}
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-2 text-xs text-muted-foreground">
-            {user.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{user.city}</span>}
+            {user.city && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{capitalizeCity(user.city)}</span>}
             {availLabel && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{availLabel}</span>}
-            {user.experienceYears && <span>{user.experienceYears} лет опыта</span>}
+            {user.experienceYears && <span>{plural(user.experienceYears, "год", "года", "лет")} опыта</span>}
           </div>
         </div>
       </div>
