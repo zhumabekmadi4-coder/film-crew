@@ -16,36 +16,42 @@ export default function ChatPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const lastTimestampRef = useRef<string>("");
+  const redisIndexRef = useRef(0);
 
-  // Initial load
+  // Load initial messages from DB
   useEffect(() => {
     fetch(`/api/conversations/${id}/messages`)
       .then((r) => r.json())
       .then((data) => {
-        const msgs = Array.isArray(data) ? data : [];
-        setMessages(msgs);
-        if (msgs.length > 0) lastTimestampRef.current = msgs[msgs.length - 1].createdAt;
+        if (Array.isArray(data)) setMessages(data);
+      });
+
+    // Get current Redis index so we only poll new messages
+    fetch(`/api/conversations/${id}/stream?after=999999999`)
+      .then((r) => r.json())
+      .then((data) => {
+        redisIndexRef.current = data.index || 0;
       });
   }, [id]);
 
-  // Polling
+  // Poll Redis for new messages (fast, doesn't hit PostgreSQL)
   useEffect(() => {
     const interval = setInterval(() => {
-      const after = lastTimestampRef.current;
-      fetch(`/api/conversations/${id}/messages${after ? `?after=${encodeURIComponent(after)}` : ""}`)
+      fetch(`/api/conversations/${id}/stream?after=${redisIndexRef.current}`)
         .then((r) => r.json())
-        .then((newMsgs) => {
-          if (Array.isArray(newMsgs) && newMsgs.length > 0) {
+        .then((data) => {
+          if (data.messages?.length > 0) {
             setMessages((prev) => {
               const existingIds = new Set(prev.map((m) => m.id));
-              const unique = newMsgs.filter((m) => !existingIds.has(m.id));
+              const unique = data.messages.filter((m: any) => !existingIds.has(m.id));
               return unique.length > 0 ? [...prev, ...unique] : prev;
             });
-            lastTimestampRef.current = newMsgs[newMsgs.length - 1].createdAt;
           }
-        });
-    }, 4000);
+          redisIndexRef.current = data.index;
+        })
+        .catch(() => {});
+    }, 1500);
+
     return () => clearInterval(interval);
   }, [id]);
 
@@ -67,8 +73,10 @@ export default function ChatPage() {
       body: JSON.stringify({ content }),
     });
     const msg = await res.json();
-    setMessages((prev) => [...prev, { ...msg, senderName: session?.user?.name }]);
-    lastTimestampRef.current = msg.createdAt;
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === msg.id)) return prev;
+      return [...prev, { ...msg, senderName: session?.user?.name }];
+    });
     setSending(false);
   }
 
