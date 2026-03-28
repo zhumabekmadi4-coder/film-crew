@@ -37,7 +37,11 @@ export default function ChatPage() {
         .then((r) => r.json())
         .then((newMsgs) => {
           if (Array.isArray(newMsgs) && newMsgs.length > 0) {
-            setMessages((prev) => [...prev, ...newMsgs]);
+            setMessages((prev) => {
+              const existingIds = new Set(prev.map((m) => m.id));
+              const unique = newMsgs.filter((m) => !existingIds.has(m.id));
+              return unique.length > 0 ? [...prev, ...unique] : prev;
+            });
             lastTimestampRef.current = newMsgs[newMsgs.length - 1].createdAt;
           }
         });
