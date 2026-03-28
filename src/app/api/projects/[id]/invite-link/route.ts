@@ -21,7 +21,8 @@ export async function POST(
   if (!project) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const code = await generateInviteCode(id);
-  const link = `${process.env.NEXTAUTH_URL}/invite/${code}`;
+  const baseUrl = (process.env.NEXTAUTH_URL || _req.nextUrl.origin).trim();
+  const link = `${baseUrl}/invite/${code}`;
 
   return NextResponse.json({ code, link });
 }

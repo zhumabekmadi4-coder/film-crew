@@ -177,7 +177,7 @@ export default function ProjectDetailPage() {
             </Button>
             {inviteLink && (
               <div className="text-xs bg-muted p-2 rounded break-all">
-                ✅ Ссылка скопирована: {inviteLink}
+                Ссылка скопирована: {inviteLink}
               </div>
             )}
           </div>
