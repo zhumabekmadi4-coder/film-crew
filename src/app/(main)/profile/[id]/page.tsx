@@ -7,7 +7,7 @@ import { UserAvatar } from "@/components/shared/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Clock, Film, MessageCircle, ExternalLink } from "lucide-react";
+import { MapPin, Clock, Film, MessageCircle, ExternalLink, Briefcase } from "lucide-react";
 import { AVAILABILITY_OPTIONS, EQUIPMENT_CATEGORIES } from "@/lib/constants";
 
 export default function UserProfilePage() {
@@ -16,6 +16,7 @@ export default function UserProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/users/${id}`)
@@ -65,6 +66,32 @@ export default function UserProfilePage() {
         </Button>
       )}
 
+      {user.photos?.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Фото</p>
+          <div className="grid grid-cols-3 gap-2">
+            {user.photos.map((photo: any) => (
+              <button
+                key={photo.id}
+                onClick={() => setSelectedPhoto(photo.url)}
+                className="aspect-square rounded-lg overflow-hidden border"
+              >
+                <img src={photo.url} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <img src={selectedPhoto} alt="" className="max-w-full max-h-full rounded-lg object-contain" />
+        </div>
+      )}
+
       {user.bio && (
         <Card>
           <CardContent className="pt-3 pb-3">
@@ -102,6 +129,7 @@ export default function UserProfilePage() {
 
       <div className="flex flex-wrap gap-2">
         {user.showreel && <a href={user.showreel} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="outline"><Film className="w-3.5 h-3.5 mr-1.5" />Showreel</Button></a>}
+        {user.portfolio && <a href={user.portfolio} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="outline"><Briefcase className="w-3.5 h-3.5 mr-1.5" />Портфолио</Button></a>}
         {user.website && <a href={user.website} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="outline"><ExternalLink className="w-3.5 h-3.5 mr-1.5" />Сайт</Button></a>}
         {user.telegram && <a href={`https://t.me/${user.telegram.replace("@","")}`} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="outline">Telegram</Button></a>}
         {user.instagram && <a href={`https://instagram.com/${user.instagram.replace("@","")}`} target="_blank" rel="noopener noreferrer"><Button size="sm" variant="outline">Instagram</Button></a>}

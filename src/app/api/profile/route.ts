@@ -22,7 +22,7 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json();
   const allowed = ["name", "bio", "city", "experienceYears", "experienceDescription",
-    "availability", "availabilityDetails", "showreel", "website", "telegram", "instagram", "vk", "avatarUrl"];
+    "availability", "availabilityDetails", "showreel", "website", "telegram", "instagram", "portfolio", "vk", "avatarUrl"];
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
   for (const key of allowed) {

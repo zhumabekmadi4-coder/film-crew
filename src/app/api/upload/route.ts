@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile } from "fs/promises";
-import path from "path";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -14,12 +12,9 @@ export async function POST(req: NextRequest) {
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
+  const base64 = buffer.toString("base64");
+  const mimeType = file.type || "image/jpeg";
+  const dataUrl = `data:${mimeType};base64,${base64}`;
 
-  const ext = file.name.split(".").pop();
-  const filename = `${session.user.id}-${Date.now()}.${ext}`;
-  const filepath = path.join(process.cwd(), "public", "avatars", filename);
-
-  await writeFile(filepath, buffer);
-
-  return NextResponse.json({ url: `/avatars/${filename}` });
+  return NextResponse.json({ url: dataUrl });
 }

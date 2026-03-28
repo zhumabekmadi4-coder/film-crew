@@ -28,6 +28,7 @@ export const users = pgTable("users", {
   website: text("website"),
   telegram: text("telegram"),
   instagram: text("instagram"),
+  portfolio: text("portfolio"),
   vk: text("vk"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -53,6 +54,16 @@ export const userProfessions = pgTable(
   },
   (t) => [unique().on(t.userId, t.professionId)]
 );
+
+export const userPhotos = pgTable("user_photos", {
+  id: serial("id").primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  order: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const userEquipment = pgTable("user_equipment", {
   id: serial("id").primaryKey(),

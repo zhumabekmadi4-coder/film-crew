@@ -3,9 +3,10 @@ import {
   users,
   userProfessions,
   userEquipment,
+  userPhotos,
   professions,
 } from "../schema";
-import { eq, ilike, and, inArray } from "drizzle-orm";
+import { eq, ilike, and, inArray, asc } from "drizzle-orm";
 
 export async function getUserById(id: string) {
   const user = await db.query.users.findFirst({
@@ -29,7 +30,13 @@ export async function getUserById(id: string) {
     .from(userEquipment)
     .where(eq(userEquipment.userId, id));
 
-  return { ...user, professions: profs, equipment: equip };
+  const photos = await db
+    .select()
+    .from(userPhotos)
+    .where(eq(userPhotos.userId, id))
+    .orderBy(asc(userPhotos.order));
+
+  return { ...user, professions: profs, equipment: equip, photos };
 }
 
 export async function getUserByEmail(email: string) {
