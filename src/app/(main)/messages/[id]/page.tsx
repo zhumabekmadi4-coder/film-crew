@@ -16,46 +16,33 @@ export default function ChatPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const redisIndexRef = useRef(0);
 
-  // Load initial messages from DB
+  // Load history from DB
   useEffect(() => {
     fetch(`/api/conversations/${id}/messages`)
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) setMessages(data);
       });
-
-    // Get current Redis index so we only poll new messages
-    fetch(`/api/conversations/${id}/stream?after=999999999`)
-      .then((r) => r.json())
-      .then((data) => {
-        redisIndexRef.current = data.index || 0;
-      });
   }, [id]);
 
-  // Poll Redis for new messages (fast, doesn't hit PostgreSQL)
+  // SSE — persistent connection, messages arrive instantly
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetch(`/api/conversations/${id}/stream?after=${redisIndexRef.current}`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.messages?.length > 0) {
-            setMessages((prev) => {
-              const existingIds = new Set(prev.map((m) => m.id));
-              const unique = data.messages.filter((m: any) => !existingIds.has(m.id));
-              return unique.length > 0 ? [...prev, ...unique] : prev;
-            });
-          }
-          redisIndexRef.current = data.index;
-        })
-        .catch(() => {});
-    }, 1500);
+    const es = new EventSource(`/api/conversations/${id}/stream`);
 
-    return () => clearInterval(interval);
+    es.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      } catch {}
+    };
+
+    return () => es.close();
   }, [id]);
 
-  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);

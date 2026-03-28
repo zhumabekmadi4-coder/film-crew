@@ -7,17 +7,16 @@ import { eq, and } from "drizzle-orm";
 import { redis } from "@/lib/redis";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
-// Returns new messages from Redis since a given index
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return new Response("Unauthorized", { status: 401 });
 
   const { id } = await params;
-  const afterIndex = parseInt(req.nextUrl.searchParams.get("after") || "0", 10);
 
   const part = await db.query.conversationParticipants.findFirst({
     where: and(
@@ -25,16 +24,50 @@ export async function GET(
       eq(conversationParticipants.userId, session.user.id)
     ),
   });
-  if (!part) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!part) return new Response("Forbidden", { status: 403 });
 
+  const encoder = new TextEncoder();
   const channelKey = `chat:${id}:msgs`;
-  const currentLen = await redis.llen(channelKey);
 
-  if (currentLen > afterIndex) {
-    const rawMsgs = await redis.lrange(channelKey, afterIndex, currentLen - 1);
-    const msgs = rawMsgs.map((m) => (typeof m === "string" ? JSON.parse(m) : m));
-    return NextResponse.json({ messages: msgs, index: currentLen });
-  }
+  const stream = new ReadableStream({
+    async start(controller) {
+      controller.enqueue(encoder.encode(": connected\n\n"));
 
-  return NextResponse.json({ messages: [], index: currentLen });
+      let closed = false;
+      let lastIndex = await redis.llen(channelKey);
+
+      req.signal.addEventListener("abort", () => {
+        closed = true;
+        try { controller.close(); } catch {}
+      });
+
+      while (!closed) {
+        try {
+          const currentLen = await redis.llen(channelKey);
+
+          if (currentLen > lastIndex) {
+            const rawMsgs = await redis.lrange(channelKey, lastIndex, currentLen - 1);
+            for (const m of rawMsgs) {
+              const data = typeof m === "string" ? m : JSON.stringify(m);
+              controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+            }
+            lastIndex = currentLen;
+          }
+
+          controller.enqueue(encoder.encode(": ping\n\n"));
+          await new Promise((r) => setTimeout(r, 800));
+        } catch {
+          if (!closed) await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
 }
