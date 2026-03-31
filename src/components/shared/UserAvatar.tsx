@@ -5,10 +5,10 @@ interface Props {
   name: string;
   avatarUrl?: string | null;
   className?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
-const sizes = { sm: "h-8 w-8 text-xs", md: "h-10 w-10 text-sm", lg: "h-16 w-16 text-xl" };
+const sizes = { xs: "h-6 w-6 text-[10px]", sm: "h-8 w-8 text-xs", md: "h-10 w-10 text-sm", lg: "h-16 w-16 text-xl" };
 
 export function UserAvatar({ name, avatarUrl, className, size = "md" }: Props) {
   const initials = name

@@ -6,7 +6,7 @@ import {
   userPhotos,
   professions,
 } from "../schema";
-import { eq, ilike, and, inArray, asc } from "drizzle-orm";
+import { eq, ilike, and, inArray, asc, ne } from "drizzle-orm";
 
 export async function getUserById(id: string) {
   const user = await db.query.users.findFirst({
@@ -45,6 +45,12 @@ export async function getUserByEmail(email: string) {
   });
 }
 
+export async function getUserByPhone(phone: string) {
+  return db.query.users.findFirst({
+    where: eq(users.phone, phone),
+  });
+}
+
 export async function searchUsers({
   query,
   professionId,
@@ -61,6 +67,8 @@ export async function searchUsers({
   offset?: number;
 }) {
   const conditions = [];
+  conditions.push(eq(users.isBanned, false));
+
   if (query) conditions.push(ilike(users.name, `%${query}%`));
   if (city) conditions.push(ilike(users.city, `%${city}%`));
   if (availability) conditions.push(eq(users.availability, availability as "full-time" | "part-time" | "project-based"));
@@ -86,9 +94,11 @@ export async function searchUsers({
       availability: users.availability,
       experienceYears: users.experienceYears,
       bio: users.bio,
+      isActor: users.isActor,
+      isCastingDirector: users.isCastingDirector,
     })
     .from(users)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(and(...conditions))
     .limit(limit)
     .offset(offset);
 

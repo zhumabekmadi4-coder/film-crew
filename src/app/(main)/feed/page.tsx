@@ -1,89 +1,149 @@
 "use client";
-import { useState, useEffect } from "react";
-import { ProjectCard } from "@/components/projects/ProjectCard";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PostComposer } from "@/components/feed/PostComposer";
+import { PostCard } from "@/components/feed/PostCard";
+import { CommentThread } from "@/components/feed/CommentThread";
 import { EmptyState } from "@/components/shared/EmptyState";
-import { FILM_GENRES } from "@/lib/constants";
-import { Search } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+
+type Tab = "all" | "following" | "my" | "news";
+
+interface PostData {
+  id: string;
+  userId: string;
+  content: string;
+  isWelcomePost: boolean;
+  createdAt: string;
+  likesCount: number;
+  commentsCount: number;
+  isLiked: boolean;
+  user: {
+    id: string;
+    name: string | null;
+    avatarUrl: string | null;
+    professions: string[];
+  };
+}
 
 export default function FeedPage() {
-  const [projects, setProjects] = useState<any[]>([]);
+  const { data: session } = useSession();
+  const [tab, setTab] = useState<Tab>("all");
+  const [posts, setPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
-  const [genre, setGenre] = useState("");
-  const [city, setCity] = useState("");
+  const [openComments, setOpenComments] = useState<string | null>(null);
+
+  const fetchPosts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/posts?tab=${tab}&limit=30`);
+      if (res.ok) {
+        const data = await res.json();
+        setPosts(data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [tab]);
 
   useEffect(() => {
-    const params = new URLSearchParams({ status: "recruiting" });
-    if (query) params.set("q", query);
-    if (genre) params.set("genre", genre);
-    if (city) params.set("city", city);
+    fetchPosts();
+  }, [fetchPosts]);
 
-    setLoading(true);
-    fetch(`/api/projects?${params}`)
-      .then((r) => r.json())
-      .then((data) => { setProjects(data); setLoading(false); });
-  }, [query, genre, city]);
+  const handleLike = async (postId: string) => {
+    await fetch(`/api/posts/${postId}/like`, { method: "POST" });
+  };
+
+  const handleDelete = async (postId: string) => {
+    const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
+    if (res.ok) {
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    }
+  };
+
+  if (!session) return null;
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="space-y-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            className="pl-9"
-            placeholder="Поиск проектов..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select value={genre || "all"} onValueChange={(v) => setGenre(v === "all" ? "" : v)}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Жанр" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все жанры</SelectItem>
-              {FILM_GENRES.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Input
-            placeholder="Город"
-            className="flex-1"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          />
-        </div>
+    <div>
+      {/* Tabs */}
+      <div className="sticky top-14 z-30 bg-background/95 backdrop-blur-sm border-b">
+        <Tabs
+          value={tab}
+          onValueChange={(v) => setTab(v as Tab)}
+          className="px-4"
+        >
+          <TabsList className="w-full h-10 bg-transparent p-0 justify-start gap-0">
+            <TabsTrigger
+              value="all"
+              className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs"
+            >
+              Все
+            </TabsTrigger>
+            <TabsTrigger
+              value="following"
+              className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs"
+            >
+              Подписки
+            </TabsTrigger>
+            <TabsTrigger
+              value="my"
+              className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs"
+            >
+              Моё
+            </TabsTrigger>
+            <TabsTrigger
+              value="news"
+              className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent text-xs"
+            >
+              Новости
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
+      {/* Post composer (only on Все and Моё tabs) */}
+      {(tab === "all" || tab === "my") && (
+        <PostComposer onPostCreated={fetchPosts} />
+      )}
+
+      {/* Posts */}
       {loading ? (
-        <div className="space-y-3">
-          {[1,2,3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
-      ) : projects.length === 0 ? (
-        (query || genre || city) ? (
-          <EmptyState
-            title="Ничего не найдено"
-            description="Попробуй изменить фильтры или параметры поиска"
-            icon="🔍"
-          />
-        ) : (
-          <EmptyState
-            title="Проектов пока нет"
-            description="Создай первый проект и начни набирать команду"
-            action={
-              <Link href="/projects/new">
-                <Button>Создать проект</Button>
-              </Link>
-            }
-          />
-        )
+      ) : posts.length === 0 ? (
+        <EmptyState
+          message={
+            tab === "following"
+              ? "Подпишитесь на пользователей, чтобы видеть их посты"
+              : tab === "my"
+              ? "Вы ещё ничего не публиковали"
+              : "Пока нет постов"
+          }
+        />
       ) : (
-        <div className="space-y-3">
-          {projects.map((p) => <ProjectCard key={p.id} project={p} />)}
+        <div>
+          {posts.map((post) => (
+            <div key={post.id}>
+              <PostCard
+                {...post}
+                currentUserId={session.user.id}
+                onLike={handleLike}
+                onDelete={handleDelete}
+                onCommentClick={(id) =>
+                  setOpenComments(openComments === id ? null : id)
+                }
+              />
+              {openComments === post.id && (
+                <CommentThread
+                  postId={post.id}
+                  onClose={() => setOpenComments(null)}
+                  onCommentAdded={fetchPosts}
+                />
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
