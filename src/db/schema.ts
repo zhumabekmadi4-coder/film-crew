@@ -15,8 +15,8 @@ import {
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  email: text("email").unique(),
-  phone: text("phone").unique(),
+  email: text("email"),
+  phone: text("phone"),
   phoneVerified: boolean("phone_verified").default(false).notNull(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
@@ -50,7 +50,7 @@ export const users = pgTable("users", {
   // Registration fields
   ageConfirmed: boolean("age_confirmed").default(false).notNull(),
   termsAccepted: boolean("terms_accepted").default(false).notNull(),
-  referralCode: text("referral_code").unique(),
+  referralCode: text("referral_code"),
   referredBy: uuid("referred_by"),
 
   // Privacy
